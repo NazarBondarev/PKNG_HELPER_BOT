@@ -20,12 +20,16 @@ def download_changes_from_site():
         reader = csv.reader(file)
 
         changes = []
-        for item in reader:
-            if item[0] != '':
-                changes.append('➡<b>'+item[0]+'</b>'+'\n<b>✅'+item[1]+'</b> '+' - '.join(item[2:4])+'\n❌'+' - '.join(item[4::]))
-            elif item[0] == '':
-                add_study = f'➡{changes[-1]}'+ '\n<b>✅'+item[1]+'</b> '+' - '.join(item[2:4])+'\n❌'+' - '.join(item[4::])
-                del changes[-1]
-                changes.append(add_study)
+        try:
 
-        return changes
+            for item in reader:
+                if item[0] != '':
+                    changes.append('➡<b>'+item[0]+'</b>'+'\n<b>✅'+item[1]+'</b> '+' - '.join(item[2:4])+'\n❌'+' - '.join(item[4::]))
+                elif item[0] == '':
+                    add_study = f'➡{changes[-1]}'+ '\n<b>✅'+item[1]+'</b> '+' - '.join(item[2:4])+'\n❌'+' - '.join(item[4::])
+                    del changes[-1]
+                    changes.append(add_study)
+
+            return changes
+        except UnicodeDecodeError:
+            pass
