@@ -20,16 +20,13 @@ class Keyboards:
         self.keyboards['general_menu_keyboard'].add(types.InlineKeyboardButton(text="Пожертва розробнику👨‍💻", callback_data="help_for_dev"))
         self.keyboards['general_menu_keyboard'].add(types.InlineKeyboardButton(text="Ми на мапі🗺", url="https://goo.gl/maps/4wa4ePvYPPr9JQzf7"))
         self.keyboards['general_menu_keyboard'].add(types.InlineKeyboardButton(text="Підтримка💪", url="https://t.me/bonnaza"))
+        self.keyboards['general_menu_keyboard'].add(types.InlineKeyboardButton(text="COVID-19 корисна інформація🦠", url="https://t.me/COVID19_Ukraine"))
+
+
 
 
         return self.keyboards["general_menu_keyboard"]
 
-    def payment_menu(self):
-        self.keyboards['payment_keyboard'] = types.InlineKeyboardMarkup()
-        self.keyboards['payment_keyboard'].add(types.InlineKeyboardButton(text="Внесок 5 UAH", pay=True))
-        self.keyboards['payment_keyboard'].add(types.InlineKeyboardButton(text="В головне меню⬅", callback_data="back_from_pay_menu"))
-
-        return self.keyboards['payment_keyboard']
 
     def facults_select_menu(self):
         """Додаємо кнопки для вибору факультету"""
@@ -56,6 +53,29 @@ class Keyboards:
             self.keyboards[self.facult].add(types.InlineKeyboardButton(text=button, callback_data=button))
 
         return self.keyboards[self.facult]
+
+    def group_menu(self, group):
+        """Додаємо меню групи"""
+
+        self.group = group
+
+        self.keyboards[self.group] = types.InlineKeyboardMarkup(row_width=3)
+
+        today_button = types.InlineKeyboardButton(text=config.group_menu[0], callback_data=config.group_menu[0])
+        tomorrow_button = types.InlineKeyboardButton(text=config.group_menu[1], callback_data=config.group_menu[1])
+        weekday_button = types.InlineKeyboardButton(text=config.group_menu[2], callback_data=config.group_menu[2])
+        change_group_button = types.InlineKeyboardButton(text=config.group_menu[3], callback_data=config.group_menu[3])
+
+        self.keyboards[self.group].add(today_button, tomorrow_button, weekday_button)
+        self.keyboards[self.group].add(change_group_button)
+
+
+
+        self.keyboards[self.group].add(types.InlineKeyboardButton(text="В головне меню⬅", callback_data="back_to_general_menu"))
+
+
+        return self.keyboards[self.group]
+
 
 
 

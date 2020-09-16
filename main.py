@@ -8,86 +8,132 @@ Developer: Nazar Bondarev \ Telegram: @bonnaza
 """
 
 import logging
+import re
+import datetime
 import config
+import json
 from aiogram import Bot, Dispatcher, executor, types, exceptions
 from keyboards import Keyboards as keybs
 import asyncio
 from messages import MESSAGES
 import re
 import convertchanges
+from json import JSONDecodeError
 
 digits_pattern = re.compile(r'^[0-9]+ [0-9]+$', re.MULTILINE)
-
-
 loop = asyncio.get_event_loop()
 bot = Bot(token=config.API_TOKEN, parse_mode=types.ParseMode.MARKDOWN)
 dp = Dispatcher(bot, loop=loop)
 logging.basicConfig(level=logging.INFO)
-
 messages_ids = {}
+days_associations = {
+    "Monday": 'понеділок',
+    "Tuesday": 'вівторок',
+    "Wednesday": 'середу',
+    "Thursday": 'четвер',
+    "Friday":"п'ятницю"
+}
+
+months_associations = {
+    'December': 'грудня',
+    'January': 'січня',
+    'February':'лютого',
+    'March': 'березня',
+    'April': 'квітня',
+    'May': 'травня',
+    'June': 'червня',
+    'July':'липня',
+    'August':'серпня',
+    'September':'вересня',
+    'October':'жовтня',
+    'November':'листопада'
+}
+
+
+
 
 @dp.message_handler(commands= ['start'])
 async def starting(message: types.Message):
+
+    if str(message.from_user.id) not in users.keys():
+        users[str(message.from_user.id)] = {
+            "name": message.from_user.first_name,
+            "surname": message.from_user.last_name,
+            "username": message.from_user.username,
+            "group": "pass"
+        }
+        await update_users_data(message, users, "new_member")
+
     name = message.from_user.first_name
     messages_ids[message.from_user.id] = message.message_id
-    print(messages_ids)
     await message.answer(f'Привіт <b>{message.from_user.first_name}!</b>👋\n'
                          f'Я звичайний бот, який був розроблений спеціально для Полтавського коледжу нафти і газу\n'
                         f'"Національного університету Полтавська політехніка імені Юрія Кондратюка"'\
-                        f'для зручного отримання розкладу та змін до нього!\n'\
+                        f' для зручного отримання розкладу та змін до нього!\n'\
                         f'Просто обери що тебе цікавить, нижче в меню👇\n\n'\
                         f'Контакти🔍\n'\
                         f'📍Наша адреса: вул. М.Грушевського, 2а\n'\
                         f'🕒Графік роботи коледжу: 08:00 - 17:00\n'\
                         f'🤖Бот працює 24/7\n'\
-                        f'📲Контактний номер: +380997992161\n'\
+                        f'📲Контактний номер розробника: +380997992161\n'
+                        f'📞Контакти адміністрації: тел./факс: (0532) 63-81-48\n'\
                         f'📩Електронна адреса: pknghelper@ukr.net\n',
                          parse_mode='html',
                          reply_markup=general_menu_buttons)
-
-
-@dp.callback_query_handler(lambda call: call.data == "help_for_dev")
-async def test(call: types.CallbackQuery):
-    PRICE = types.LabeledPrice(label='На мівінку розробнику', amount=500)
-
-    await bot.send_invoice(
-        call.message.chat.id,
-        title=MESSAGES['tm_title'],
-        description=MESSAGES['tm_description'],
-        provider_token=config.PAYMENTS_PROVIDER_TOKEN,
-        currency='uah',
-        is_flexible=False,  # True если конечная цена зависит от способа доставки
-        prices=[PRICE],
-        start_parameter='time-machine-example',
-        payload='some-invoice-payload-for-our-internal-use',
-        reply_markup = payment_menu_buttons)
-    print(call)
-
-@dp.callback_query_handler(lambda call: call.data == "back_from_pay_menu")
-async def back_to_general_from_payment(call: types.CallbackQuery):
-    await bot.delete_message(call.message.chat.id, call.message.message_id)
-
-
-@dp.pre_checkout_query_handler(lambda query: True)
-async def process_pre_checkout_query(pre_checkout_query: types.PreCheckoutQuery):
-    await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
-
+@dp.message_handler(commands= ['info'])
+async def info(message: types.Message):
+    await bot.send_message(message.chat.id,
+                        f'Чат-бот, який був розроблений спеціально для Полтавського коледжу нафти і газу\n'
+                        f'"Національного університету Полтавська політехніка імені Юрія Кондратюка"'\
+                        f' для зручного отримання розкладу та змін до нього!\n'\
+                        f'Контакти🔍\n'\
+                        f'📍Наша адреса: вул. М.Грушевського, 2а\n'\
+                        f'🕒Графік роботи коледжу: 08:00 - 17:00\n'\
+                        f'🤖Бот працює 24/7\n'\
+                        f'📲Контактний номер розробника: +380997992161\n'
+                        f'📞Контакти адміністрації: тел./факс: (0532) 63-81-48\n'\
+                        f'📩Електронна адреса: pknghelper@ukr.net\n')
 
 @dp.callback_query_handler(lambda call: call.data in config.general_menu_buttons)
 async def select_facult(call: types.CallbackQuery):
-
-    if call.data == config.general_menu_buttons[0]:
+    global group_changes
+    try:
+        if call.data == config.general_menu_buttons[0] and users[str(call.from_user.id)]['group'] == 'pass':
+            await bot.edit_message_text(chat_id=call.message.chat.id,
+                                        message_id=call.message.message_id,
+                                        text="Що ж, обери свій факультет...",
+                                        reply_markup = facults_menu_buttons)
+    except KeyError:
+        users[str(call.from_user.id)] = {
+            "name": call.from_user.first_name,
+            "surname": call.from_user.last_name,
+            "username": call.from_user.username,
+            "group": "pass"
+        }
+        await update_users_data(call, users, "new_member")
         await bot.edit_message_text(chat_id=call.message.chat.id,
                                     message_id=call.message.message_id,
                                     text="Що ж, обери свій факультет...",
-                                    reply_markup = facults_menu_buttons)
+                                    reply_markup=facults_menu_buttons)
+
+
+
+    if call.data == config.general_menu_buttons[0] and users[str(call.from_user.id)]['group'] != 'pass':
+        group_menu_keyboard = keybs(keybs.keyboards).group_menu(users[str(call.from_user.id)]['group'])
+
+        await bot.edit_message_text(chat_id=call.message.chat.id,
+                                    message_id=call.message.message_id,
+                                    text=
+                                    f"Меню групи: <b>{users[str(call.from_user.id)]['group']}</b>\n\n"
+                                    f"👇 Дізнайся розклад своєї групи який тебе цікавить за допомогою меню нижче",
+                                    parse_mode='html', reply_markup=group_menu_keyboard)
 
     if call.data == config.general_menu_buttons[-1]:
         await bot.edit_message_text(chat_id=call.message.chat.id,
                                     message_id=call.message.message_id,
                                     text=\
-                                      f'Я звичайний бот, який був розроблений спеціально для Полтавського коледжу нафти і газу\n'
-                                      f'"Національного університету Полтавська політехніка імені Юрія Кондратюка"'\
+                                      f'Я звичайний чат-бот, який був розроблений спеціально для Полтавського коледжу нафти і газу\n'
+                                      f'"Національного університету Полтавська політехніка імені Юрія Кондратюка" '\
                                       f'для зручного отримання розкладу та змін до нього!\n'\
                                       f'Просто обери що тебе цікавить, нижче в меню👇\n\n'\
                                      f'Контакти🔍\n' \
@@ -98,15 +144,46 @@ async def select_facult(call: types.CallbackQuery):
                                      f'📩Електронна адреса: pknghelper@ukr.net\n',
                                      parse_mode='html',
                                      reply_markup=general_menu_buttons)
+    try:
 
-    if call.data == config.general_menu_buttons[1]:
-        changes = convertchanges.download_changes_from_site()
-        changes = '\n\n'.join(changes)
-        await bot.edit_message_text(chat_id=call.message.chat.id,
-                                    message_id=call.message.message_id,
-                                    text="Обери свою групу, і тут відображатимуться зміни конкретно для тебе! Також, ти будеш отримувати сповіщення якщо я знайду твою групу в змінах.\n\n"+changes,
-                                    parse_mode='html',
-                                    reply_markup=general_menu_buttons)
+        if call.data == config.general_menu_buttons[1] and users[str(call.from_user.id)] != 'pass':
+            if users[str(call.from_user.id)]['group'] == 'pass':
+                await bot.edit_message_text(chat_id=call.message.chat.id,
+                                            message_id=call.message.message_id,
+                                            text="Для початку мені потрібно знати групу в якій ти навчаєшся, щоб видати зміни саме для тебе\n"
+                                                 "Що ж, обери свій факультет",
+                                            parse_mode='html',
+                                            reply_markup=facults_menu_buttons)
+            changes = convertchanges.download_changes_from_site()
+            #changes = '\n\n'.join(changes)
+
+            for item in changes:
+                if re.search(users[str(call.from_user.id)]['group'], item) != None:
+                    group_changes = item
+                    break
+                else:
+                    group_changes = 'none'
+
+            if group_changes != 'none':
+                await bot.edit_message_text(chat_id=call.message.chat.id,
+                                            message_id=call.message.message_id,
+                                            text=group_changes+"\n\n🕞Зміни оновлюються кожного дня о 17:00",
+                                            parse_mode='html',
+                                            reply_markup=general_menu_buttons)
+
+            elif group_changes == "none" and users[str(call.from_user.id)]['group'] != 'pass':
+                await bot.edit_message_text(chat_id=call.message.chat.id,
+                                            message_id=call.message.message_id,
+                                            text=f"🤷‍♂Змін до розкладу для групи <b>{users[str(call.from_user.id)]['group']}</b> не знайдено...\n"
+                                                 f"🔔Ти отримаєш сповіщення якщо вони з`являться!\n\n🕞Зміни оновлюються кожного дня о 17:00",
+                                            parse_mode='html',
+                                                reply_markup=general_menu_buttons)
+
+
+
+    except exceptions.MessageNotModified:
+        pass
+
     if call.data == config.general_menu_buttons[2]:
         await bot.edit_message_text(chat_id=call.message.chat.id,
                                     message_id=call.message.message_id,
@@ -156,7 +233,7 @@ async def backs_to_menus(call: types.CallbackQuery):
                                     reply_markup=facults_menu_buttons)
 
 @dp.callback_query_handler(lambda call: call.data in facults_for_select_groups)
-async def back_to_general_menu(call: types.CallbackQuery):
+async def select_group(call: types.CallbackQuery):
 
     groups_menu_buttons = keybs(keybs.keyboards).groups_select_menu(call.data)
     await bot.edit_message_text(chat_id=call.message.chat.id,
@@ -164,21 +241,137 @@ async def back_to_general_menu(call: types.CallbackQuery):
                                 text="Прийшов час обрати свою групу...",
                                 reply_markup=groups_menu_buttons)
 
-@dp.callback_query_handler(lambda call: call.data)
-async def view_group_menu(call: types.CallbackQuery):
+@dp.callback_query_handler(lambda call: call.data in groups_list or call.data == "back_to_general_menu" and call.data != "Назад⬅")
+async def save_user_group_and_view_group_menu(call: types.CallbackQuery):
 
-    groups_menu_buttons = keybs(keybs.keyboards).groups_select_menu(call.data)
-    await bot.edit_message_text(chat_id=call.message.chat.id,
-                                message_id=call.message.message_id,
-                                text="Прийшов час обрати свою групу...",
-                                reply_markup=groups_menu_buttons)
+
+    if call.data in groups_list:
+        users[str(call.from_user.id)]['group'] = call.data
+        await update_users_data(call, users, "new_group_select")
+        group_menu_keyboard = keybs(keybs.keyboards).group_menu(call.data)
+
+        await bot.edit_message_text(chat_id=call.message.chat.id,
+                                   message_id = call.message.message_id,
+                                   text=
+                                   f"😑 Ми тебе запам'ятали\n\n"
+                                   f"🥳 Вітаю в меню групи <b>{call.data}</b>\n"
+                                   f"👇 Дізнайся розклад своєї групи який тебе цікавить за допомогою меню нижче",
+                                   parse_mode='html', reply_markup=group_menu_keyboard)
+
+    if call.data == "back_to_general_menu":
+        await bot.edit_message_text(chat_id=call.message.chat.id,
+                                    message_id=call.message.message_id,
+                                    text="Ми знову в головному меню...\nУра?😐",
+                                    reply_markup=general_menu_buttons)
+
+
+
+async def update_users_data(user, users, status):
+    try:
+        with open("./data/users.json", 'w', encoding='UTF-8') as update_data:
+            json.dump(users, update_data, ensure_ascii=False, indent=4)
+
+            if status == "new_member":
+                await bot.send_message(config.admin, f"""Додано нового користувача:
+<b>
+Ім'я: {user.from_user.first_name}  
+Фамілія: {user.from_user.last_name}
+Юзернейм: @{user.from_user.username}
+id: {user.from_user.id}
+</b>
+        """, parse_mode='html')
+            elif status == "new_group_select":
+                await bot.send_message(config.admin, f"""Користувач обрав групу {users[str(user.from_user.id)]['group']}:
+<b>
+Ім'я: {user.from_user.first_name}  
+Фамілія: {user.from_user.last_name}
+Юзернейм: @{user.from_user.username}
+id: {user.from_user.id}
+</b>
+        """, parse_mode='html')
+
+    except JSONDecodeError as e:
+        await bot.send_message(config.admin,f"Не вдалося записати нові дані про користувача. Помилка: \n <code>{e}</code>", parse_mode='HTML')
+
+
+@dp.callback_query_handler(lambda call: call.data in config.group_menu)
+async def group_menu_func(call: types.CallbackQuery):
+    group_menu_keyboard = keybs(keybs.keyboards).group_menu(call.data)
+    today = datetime.datetime.today()
+    tomorrow = today + datetime.timedelta(days=1)
+
+    try:
+        if call.data == config.group_menu[0]:
+            print(timetable[users[str(call.from_user.id)]['group']]['Monday'])
+            await bot.edit_message_text(chat_id=call.from_user.id,
+                                        message_id=call.message.message_id,
+                                        text=f"Розклад на <b>{days_associations[today.strftime('%A')]}</b> "\
+                                             f"{today.strftime('%d')} {months_associations[today.strftime('%B')]} {today.strftime('%Y')} року\n\n"+
+                                             '\n'.join(timetable[users[str(call.from_user.id)]['group']][today.strftime("%A")]),
+                                        parse_mode='html',reply_markup=group_menu_keyboard)
+
+        elif call.data == config.group_menu[1]:
+            await bot.edit_message_text(chat_id=call.from_user.id,
+                                        message_id=call.message.message_id,
+                                        text=f"Розклад на <b>{days_associations[tomorrow.strftime('%A')]}</b> "\
+                                             f"{tomorrow.strftime('%d')} {months_associations[tomorrow.strftime('%B')]} {today.strftime('%Y')} року\n\n"+
+                                                           '\n'.join(timetable[users[str(call.from_user.id)]['group']][tomorrow.strftime("%A")]),
+                                        parse_mode='html', reply_markup=group_menu_keyboard)
+
+        elif call.data == config.group_menu[2]:
+            group = timetable[users[str(call.from_user.id)]['group']]
+            week_timetable = """
+Розклад на тиждень:\n
+<b>Понеділок</b>
+{0}\n\n
+<b>Вівторок</b>
+{1}\n\n
+<b>Середа</b>
+{2}\n\n
+<b>Четвер</b>
+{3}\n\n
+<b>П`ятниця</b>
+{4}\n\n""".format('\n'.join(group['Monday']),
+                  '\n'.join(group['Tuesday']),
+                  '\n'.join(group['Wednesday']),
+                  '\n'.join(group['Thursday']),
+                  '\n'.join(group['Friday']))
+
+            await bot.edit_message_text(chat_id=call.from_user.id,
+                                        message_id=call.message.message_id,
+                                        text=week_timetable,
+                                        parse_mode='html', reply_markup=group_menu_keyboard)
+        elif call.data == config.group_menu[3]:
+            await bot.edit_message_text(chat_id=call.message.chat.id,
+                                        message_id=call.message.message_id,
+                                        text="Що ж, обери свій факультет...",
+                                        reply_markup=facults_menu_buttons)
+
+
+    except exceptions.MessageNotModified:
+        pass
+
+
 
 
 if __name__ == "__main__":
+    group_changes = ''
+
     general_menu_buttons = keybs(keybs.keyboards).upload_general_menu()
     facults_menu_buttons = keybs(keybs.keyboards).facults_select_menu()
-    payment_menu_buttons = keybs(keybs.keyboards).payment_menu()
 
     facults_for_select_groups = [s[0:10] for s in config.facults_menu_buttons.keys()]
+
+    #Збираємо групи поодинично для обробника вибора своєї групи
+    groups_list = []
+    for groups_lists in config.facults_menu_buttons.values():
+        for groups in groups_lists:
+            groups_list.append(groups)
+   
+    with open('./data/users.json', 'r', encoding='UTF-8') as read_users:
+        users = json.load(read_users)
+
+    with open('./data/data.json', 'r', encoding='UTF-8') as read_timetable:
+        timetable = json.load(read_timetable)
 
     executor.start_polling(dp, skip_updates=True)
