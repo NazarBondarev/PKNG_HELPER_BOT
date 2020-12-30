@@ -15,9 +15,7 @@ import json
 from aiogram import Bot, Dispatcher, executor, types, exceptions
 from keyboards import Keyboards as keybs
 import asyncio
-from messages import MESSAGES
 import re
-import convertchanges
 from json import JSONDecodeError
 
 digits_pattern = re.compile(r'^[0-9]+ [0-9]+$', re.MULTILINE)
