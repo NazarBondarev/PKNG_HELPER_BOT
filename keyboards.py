@@ -17,7 +17,6 @@ class Keyboards:
         for button in config.general_menu_buttons:
             self.keyboards['general_menu_keyboard'].add(types.InlineKeyboardButton(text=button, callback_data=button))
 
-        self.keyboards['general_menu_keyboard'].add(types.InlineKeyboardButton(text="Пожертва розробнику👨‍💻", callback_data="help_for_dev"))
         self.keyboards['general_menu_keyboard'].add(types.InlineKeyboardButton(text="Ми на мапі🗺", url="https://goo.gl/maps/4wa4ePvYPPr9JQzf7"))
         self.keyboards['general_menu_keyboard'].add(types.InlineKeyboardButton(text="Підтримка💪", url="https://t.me/bonnaza"))
         self.keyboards['general_menu_keyboard'].add(types.InlineKeyboardButton(text="COVID-19 корисна інформація🦠", url="https://t.me/COVID19_Ukraine"))
