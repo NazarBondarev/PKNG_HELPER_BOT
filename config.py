@@ -1,8 +1,7 @@
-API_TOKEN = "840254405:AAF2ZSKltqoxFz_aFCkQn4NXUwTJDUntqvo"
+API_TOKEN = "TOKEN"
 
-PAYMENTS_PROVIDER_TOKEN = '632593626:TEST:sandbox_i67140219625'
-
-pdf_tables_key = "mvfpew20fx8c"
+PAYMENTS_PROVIDER_TOKEN = 'TOKEN'
+pdf_tables_key = "TOKEN"
 
 admin = 366954921
 
