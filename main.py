@@ -100,7 +100,7 @@ async def malling(message: types.Message):
             try:
                 await bot.send_message(int(item), format_malling)
                 i+=1
-            except exception.BotBlocked:
+            except exceptions.BotBlocked:
                 pass
         await bot.send_message(366954921, f"Рассылку получили {0} пользователей")
 @dp.callback_query_handler(lambda call: call.data in config.general_menu_buttons)
