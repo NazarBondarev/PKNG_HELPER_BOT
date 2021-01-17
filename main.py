@@ -91,7 +91,18 @@ async def info(message: types.Message):
                         f'📲Контактний номер розробника: +380997992161\n'
                         f'📞Контакти адміністрації: тел./факс: (0532) 63-81-48\n'\
                         f'📩Електронна адреса: pknghelper@ukr.net\n')
-
+@dp.message_handler(commads=['m'])
+async def malling(message: types.Message):
+    if message.from_user.id == 366954921:
+        format_malling = message.text.replace("/m", "")
+        i = 0
+        for item in users:
+            try:
+                await bot.send_message(int(item), format_malling)
+                i+=1
+            except exception.BotBlocked:
+                pass
+        await bot.send_message(366954921, f"Рассылку получили {0} пользователей")
 @dp.callback_query_handler(lambda call: call.data in config.general_menu_buttons)
 async def select_facult(call: types.CallbackQuery):
     global group_changes
