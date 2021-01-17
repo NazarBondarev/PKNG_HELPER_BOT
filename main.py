@@ -91,7 +91,7 @@ async def info(message: types.Message):
                         f'📲Контактний номер розробника: +380997992161\n'
                         f'📞Контакти адміністрації: тел./факс: (0532) 63-81-48\n'\
                         f'📩Електронна адреса: pknghelper@ukr.net\n')
-@dp.message_handler(commads=['m'])
+@dp.message_handler(commands=['m'])
 async def malling(message: types.Message):
     if message.from_user.id == 366954921:
         format_malling = message.text.replace("/m", "")
