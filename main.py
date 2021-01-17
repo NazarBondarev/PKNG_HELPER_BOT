@@ -96,7 +96,7 @@ async def malling(message: types.Message):
     if message.from_user.id == 366954921:
         format_malling = message.text.replace("/m", "")
         i = 0
-        for item in users:
+        for item in users.keys():
             try:
                 await bot.send_message(int(item), format_malling)
                 i+=1
