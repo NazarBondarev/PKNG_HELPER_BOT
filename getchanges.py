@@ -11,9 +11,8 @@ class GetChanges:
 
         with open("./data/zm.pdf", "wb") as get:
             get.write(self.r.get(self.url).content)
-
-        pages = convert_from_path('./data/zm.pdf', 0)
-        pages[0].save('./data/zm.jpg', 'JPEG')
+            pages = convert_from_path('./data/zm.pdf', 0)
+            pages[0].save('./data/zm.jpg', 'JPEG')
 
         return True
 
