@@ -7,6 +7,8 @@ Developer: Nazar Bondarev \ Telegram: @bonnaza
 
 """
 
+
+from getchanges import GetChanges as Gt
 import logging
 import re
 import datetime
@@ -73,7 +75,6 @@ async def starting(message: types.Message):
                         f'📍Наша адреса: вул. М.Грушевського, 2а\n'\
                         f'🕒Графік роботи коледжу: 08:00 - 17:00\n'\
                         f'🤖Бот працює 24/7\n'\
-                        f'📲Контактний номер розробника: +380997992161\n'
                         f'📞Контакти адміністрації: тел./факс: (0532) 63-81-48\n'\
                         f'📩Електронна адреса: pknghelper@ukr.net\n',
                          parse_mode='html',
@@ -88,7 +89,6 @@ async def info(message: types.Message):
                         f'📍Наша адреса: вул. М.Грушевського, 2а\n'\
                         f'🕒Графік роботи коледжу: 08:00 - 17:00\n'\
                         f'🤖Бот працює 24/7\n'\
-                        f'📲Контактний номер розробника: +380997992161\n'
                         f'📞Контакти адміністрації: тел./факс: (0532) 63-81-48\n'\
                         f'📩Електронна адреса: pknghelper@ukr.net\n')
 @dp.message_handler(commands=['m'])
@@ -102,7 +102,7 @@ async def malling(message: types.Message):
                 i+=1
             except exceptions.BotBlocked:
                 pass
-        await bot.send_message(366954921, f"Рассылку получили {0} пользователей")
+        await bot.send_message(366954921, f"Рассылку получили {i} пользователей")
 @dp.callback_query_handler(lambda call: call.data in config.general_menu_buttons)
 async def select_facult(call: types.CallbackQuery):
     global group_changes
@@ -153,45 +153,13 @@ async def select_facult(call: types.CallbackQuery):
                                      f'📩Електронна адреса: pknghelper@ukr.net\n',
                                      parse_mode='html',
                                      reply_markup=general_menu_buttons)
-    try:
 
-        if call.data == config.general_menu_buttons[1] and users[str(call.from_user.id)] != 'pass':
-            if users[str(call.from_user.id)]['group'] == 'pass':
-                await bot.edit_message_text(chat_id=call.message.chat.id,
-                                            message_id=call.message.message_id,
-                                            text="Для початку мені потрібно знати групу в якій ти навчаєшся, щоб видати зміни саме для тебе\n"
-                                                 "Що ж, обери свій факультет",
-                                            parse_mode='html',
-                                            reply_markup=facults_menu_buttons)
-            changes = convertchanges.download_changes_from_site()
-            #changes = '\n\n'.join(changes)
-
-            for item in changes:
-                if re.search(users[str(call.from_user.id)]['group'], item) != None:
-                    group_changes = item
-                    break
-                else:
-                    group_changes = 'none'
-
-            if group_changes != 'none':
-                await bot.edit_message_text(chat_id=call.message.chat.id,
-                                            message_id=call.message.message_id,
-                                            text=group_changes+"\n\n🕞Зміни оновлюються кожного дня о 17:00",
-                                            parse_mode='html',
-                                            reply_markup=general_menu_buttons)
-
-            elif group_changes == "none" and users[str(call.from_user.id)]['group'] != 'pass':
-                await bot.edit_message_text(chat_id=call.message.chat.id,
-                                            message_id=call.message.message_id,
-                                            text=f"🤷‍♂Змін до розкладу для групи <b>{users[str(call.from_user.id)]['group']}</b> не знайдено...\n"
-                                                 f"🔔Ти отримаєш сповіщення якщо вони з`являться!\n\n🕞Зміни оновлюються кожного дня о 17:00",
-                                            parse_mode='html',
-                                                reply_markup=general_menu_buttons)
+    if call.data == config.general_menu_buttons[1]:
+        result = Gt().get_changes()
+        if result:
+            await bot.send_photo(chat_id = call.message.chat.id, photo=open("./data/zm.jpg", "rb"))
 
 
-
-    except exceptions.MessageNotModified:
-        pass
 
     if call.data == config.general_menu_buttons[2]:
         await bot.edit_message_text(chat_id=call.message.chat.id,

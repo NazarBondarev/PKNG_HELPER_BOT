@@ -1,9 +1,12 @@
-API_TOKEN = ""
+from environs import Env
+env = Env()
+env.read_env()
 
-PAYMENTS_PROVIDER_TOKEN = 'TOKEN'
-pdf_tables_key = "TOKEN"
 
-admin = 366954921
+API_TOKEN = env.str("API_TOKEN")  # Забираем значение типа str
+admin = env.int("ADMINS")
+
+
 
 general_menu_buttons = ['Моя група👥', 'Зміни до розкладу🗒', 'Розклад дзвінків🔔', 'Про бота📜']
 
