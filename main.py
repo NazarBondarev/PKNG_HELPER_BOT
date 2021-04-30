@@ -100,8 +100,8 @@ async def malling(message: types.Message):
             try:
                 await bot.send_message(int(item), format_malling)
                 i+=1
-            except exceptions.BotBlocked:
-                pass
+            except (exceptions.BotBlocked, exceptions.UserDeactivated):
+                continue
         await bot.send_message(366954921, f"Рассылку получили {i} пользователей")
 @dp.callback_query_handler(lambda call: call.data in config.general_menu_buttons)
 async def select_facult(call: types.CallbackQuery):
